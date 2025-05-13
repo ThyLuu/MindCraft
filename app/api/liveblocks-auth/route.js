@@ -10,12 +10,18 @@ export async function POST(request) {
 
     const { room } = await request.json()
 
-    const {searchParams} = new URL(request?.url)
+    const { searchParams } = new URL(request?.url)
 
     const roomId = searchParams.get('roomId')
 
+    const email = user?.primaryEmailAddress?.emailAddress;
+
+    if (!email) {
+        return new Response("Unauthorized", { status: 401 });
+    }
+
     const session = liveblocks.prepareSession(
-        user?.primaryEmailAddress?.emailAddress,
+        email
     );
 
     console.log('room', roomId)

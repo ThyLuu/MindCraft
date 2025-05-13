@@ -34,15 +34,35 @@ function WorkSpaceList() {
         setWorkspaceList(workspaces)
     }
 
-    // 🛠 Hàm xóa và cập nhật lại danh sách
+    // Hàm xóa và cập nhật lại danh sách
     const DeleteWorkspace = async (event, workspaceId) => {
         event.stopPropagation(); // 🔥 Ngăn điều hướng khi bấm "Xóa"
 
         try {
-            await deleteDoc(doc(db, "Workspace", String(workspaceId))); // 🔥 Xóa tài liệu Firestore
-            toast.success("Workspace has been deleted")
+            // 1. Truy vấn tất cả document thuộc workspace
+            const q = query(collection(db, "workspaceDocuments"), where("workspaceId", "==", workspaceId));
+            const querySnapshot = await getDocs(q);
 
-            // 🛠 Cập nhật lại danh sách sau khi xóa
+            const deletePromises = [];
+
+            querySnapshot.docs.forEach((document) => {
+                const docId = document.id;
+
+                // Xóa document trong workspaceDocuments
+                deletePromises.push(deleteDoc(doc(db, "workspaceDocuments", docId)));
+
+                // Xóa documentOutput tương ứng
+                deletePromises.push(deleteDoc(doc(db, "documentOutput", docId)));
+            });
+
+            // 2. Thực hiện tất cả thao tác xóa
+            await Promise.all(deletePromises);
+
+            // 3. Xóa workspace chính
+            await deleteDoc(doc(db, "Workspace", String(workspaceId)));
+
+            // 4. Cập nhật UI
+            toast.success("Workspace và tất cả document đã được xóa");
             setWorkspaceList((prev) => prev.filter((ws) => ws.id !== workspaceId));
         } catch (error) {
             console.error("Lỗi khi xóa:", error);

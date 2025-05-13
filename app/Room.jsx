@@ -1,6 +1,5 @@
 "use client";
 
-import { ReactNode } from "react";
 import {
   LiveblocksProvider,
   RoomProvider,
@@ -11,11 +10,24 @@ import { db } from "@/config/firebaseConfig"; // 🔥 Nhớ import db nếu chư
 import { Loader2Icon } from "lucide-react";
 
 export function Room({ children, params }) {
-  const parsedParams = params?.value ? JSON.parse(params.value) : params;
+  const parsedParams = (() => {
+    try {
+      return params?.value ? JSON.parse(params.value) : params;
+    } catch (e) {
+      console.error("Lỗi parse:", e);
+      return { documentid: null };
+    }
+  })();
+
+  const roomId = parsedParams?.documentid || parsedParams?.workspaceid || 'default-room';
+
+  if (!roomId) {
+    return <div className="text-red-500 text-center mt-10">Invalid room ID</div>;
+  }
 
   return (
     <LiveblocksProvider
-      authEndpoint={"/api/liveblocks-auth?roomId=" + parsedParams?.documentid}
+      authEndpoint={"/api/liveblocks-auth?roomId=" + roomId}
 
       resolveUsers={async ({ userIds }) => {
         // console.log("User IDs:", userIds);
@@ -64,7 +76,7 @@ export function Room({ children, params }) {
         return userList.map((user) => user.email);
       }}
     >
-      <RoomProvider id={parsedParams?.documentid ? parsedParams?.documentid : '1'}>
+      <RoomProvider id={roomId}>
         <ClientSideSuspense fallback={
           <div className="flex flex-col items-center justify-center h-screen">
             <Loader2Icon className="animate-spin mb-2" />

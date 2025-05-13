@@ -10,8 +10,20 @@ function DocumentList({ documentList, params }) {
     const router = useRouter()
 
     const DeleteDocument = async (docId) => {
-        await deleteDoc(doc(db, "workspaceDocuments", docId));
-        toast('The document has been deleted')
+        try {
+            await deleteDoc(doc(db, "workspaceDocuments", docId));
+
+            await deleteDoc(doc(db, "documentOutput", docId));
+
+            toast('The document has been deleted');
+
+            if (String(params?.documentid) === String(docId)) {
+                router.push(`/workspace/${params?.workspaceid}`);
+            }
+        } catch (error) {
+            console.error("Error deleting document:", error);
+            toast.error('Failed to delete the document');
+        }
     }
 
     // console.log("Current documentid:", params?.documentid);
